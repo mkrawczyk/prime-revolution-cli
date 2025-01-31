@@ -1,0 +1,21 @@
+{
+    "name": "mkrawczyk/prime-revolution-cli",
+    "description": "CLI for scraping the old prime.e-wrestling.org website for content.",
+    "type": "library",
+    "license": "MIT",
+    "autoload": {
+        "psr-4": {
+            "Mkrawczyk\\PrimeRevolutionCli\\": "src/"
+        }
+    },
+    "authors": [
+        {
+            "name": "Matt Krawczyk",
+            "email": "matthew.krawczyk@gmail.com"
+        }
+    ],
+    "minimum-stability": "stable",
+    "require": {
+        "symfony/console": "^6.0"
+    }
+}

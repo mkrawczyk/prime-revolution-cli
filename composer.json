@@ -16,6 +16,11 @@
     ],
     "minimum-stability": "stable",
     "require": {
-        "symfony/console": "^6.0"
+        "symfony/console": "^6.0",
+        "symfony/http-client": "^6.0",
+        "symfony/filesystem": "^6.0",
+        "guzzlehttp/guzzle": "^7.9",
+        "ext-curl": "*",
+        "symfony/dom-crawler": "^6.0"
     }
 }

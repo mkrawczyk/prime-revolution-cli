@@ -1,0 +1,116 @@
+<?php
+
+namespace Mkrawczyk\PrimeRevolutionCli\Commands;
+
+use GuzzleHttp\Client;
+use GuzzleHttp\Exception\GuzzleException;
+use GuzzleHttp\Exception\ServerException;
+use Symfony\Component\Console\Command\Command;
+use Symfony\Component\Console\Input\InputInterface;
+use Symfony\Component\Console\Output\OutputInterface;
+use Symfony\Component\DomCrawler\Crawler;
+use Symfony\Component\Filesystem\Exception\IOExceptionInterface;
+use Symfony\Component\Filesystem\Filesystem;
+use Symfony\Component\Filesystem\Path;
+use Symfony\Component\HttpClient\HttpClient;
+use Symfony\Contracts\HttpClient\Exception\TransportExceptionInterface;
+
+class FetchRevolution extends Command {
+
+    private const QUERY_URL_BASE = 'http://prime.e-wrestling.org/content.php';
+
+    /**
+     * Name of the command that we are building.
+     */
+    protected static $defaultName = 'fetch';
+
+    /**
+     * Command description as it appears in the list of available commands.
+     */
+    protected static $defaultDescription = 'Fetch all PRIME Revolution/supercard shows.';
+
+    protected function execute(InputInterface $input, OutputInterface $output): int
+    {
+        $this->getShowByID(188);
+        return 0;
+    }
+
+    /**
+     * @throws GuzzleException
+     */
+    private function getShowByID(int $showID): int
+    {
+        $client = new Client();
+
+        try {
+            $response = $client->request(
+                'GET',
+                self::QUERY_URL_BASE,
+                [
+                    'query' => [
+                        'p' => 'results',
+                        'id' => $showID,
+                    ],
+                    'headers' => [
+                        'Accept' => 'text/html; charset=UTF-8',
+                        'User-Agent' => 'prime-revolution-cli',
+                    ],
+                ]
+            );
+
+            $responseBodyAsString = $response->getBody()->getContents();
+        } catch (ServerException $e) {
+            // The site that we're hitting is serving pages with both content and a 500 response code, which is causing
+            // us to fall into this block with alarming frequency. Because we have no control over the response, we're
+            // forced to handle that here. Yes, it's jank.
+            $response = $e->getResponse();
+
+            $responseBodyAsString = $response->getBody()->getContents();
+        }
+
+        $crawler = new Crawler();
+        // Needed because the original Backstage script was the wild west of allowing stuff into the DB.
+        $crawler->addHtmlContent($responseBodyAsString, 'UTF-8');
+
+        $showTitle = $crawler->filterXPath('//div[contains(attribute::class, "results")]//h1')
+            ->getNode(0)
+            ->textContent;
+
+        $showLocation = $crawler->filterXPath('//div[contains(attribute::class, "results")]//h6')
+            ->getNode(0)
+            ->textContent;
+
+        $segmentTitles = $crawler->filterXPath('//h2[contains(attribute::class, "results")]');
+        $segmentContent = $crawler->filterXPath('//div[contains(attribute::class, "resultsdiv")]');
+
+        echo $this->buildShowStringFromResponse($showTitle, $showLocation, $segmentTitles, $segmentContent);
+
+        return 0;
+    }
+
+    /**
+     * @param string $title
+     * @param string $location
+     * @param Crawler $segmentTitles
+     * @param Crawler $segmentContent
+     * @return string
+     */
+    private function buildShowStringFromResponse(
+        string $title,
+        string $location,
+        Crawler $segmentTitles,
+        Crawler $segmentContent
+    ): string {
+        $showContentString = strtoupper($title) . PHP_EOL . $location . PHP_EOL;
+        $showContentString .= str_repeat('-', 60) . PHP_EOL . PHP_EOL;
+
+        for ($segmentCount = 0; $segmentCount < $segmentTitles->count(); $segmentCount++) {
+            $showContentString .= strtoupper($segmentTitles->getNode($segmentCount)->textContent)
+                . PHP_EOL
+                . $segmentContent->getNode($segmentCount)->textContent
+                . PHP_EOL . PHP_EOL . PHP_EOL;
+        }
+
+        return $showContentString;
+    }
+}

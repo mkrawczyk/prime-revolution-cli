@@ -20,6 +20,24 @@ class FetchRevolution extends Command {
     private const QUERY_URL_BASE = 'http://prime.e-wrestling.org/content.php';
 
     /**
+     * Has a list of all the shows in the format:
+     * <table class="archive">
+     *  <tr class="archiveheading">...</tr>
+     *  <tr class="archiverow1 or archiverow2">
+     *      <td>
+     *          <a href="content.php?p=results&id=SHOW_ID"> SHOW_TITLE </a>
+     *      </td>
+     *      <td>
+     *          SHOW_DATE
+     *      </td>
+     *      <td> Information we don't care about </td>
+     *      <td> More information we don't care about </td>
+     *  </tr>
+     * </table>
+     */
+    private const SHOW_CONTENT_LIST = 'http://prime.e-wrestling.org/content.php?p=archives';
+
+    /**
      * Name of the command that we are building.
      */
     protected static $defaultName = 'fetch';
@@ -29,10 +47,74 @@ class FetchRevolution extends Command {
      */
     protected static $defaultDescription = 'Fetch all PRIME Revolution/supercard shows.';
 
+    /**
+     * @throws GuzzleException
+     */
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
-        $this->getShowByID(188);
+        //$this->getShowByID(188);
+        $showList = $this->getShowListFromArchive();
+        print_r($showList);
+
         return 0;
+    }
+
+    /**
+     * @return array<int, array{id: int, title: string, showDate: string}>
+     *
+     * @throws GuzzleException
+     */
+    private function getShowListFromArchive(): array
+    {
+        $showList = [];
+
+        $client = new Client();
+
+        try {
+            $response = $client->request(
+                'GET',
+                self::SHOW_CONTENT_LIST,
+                [
+                    'headers' => [
+                        'Accept' => 'text/html; charset=UTF-8',
+                        'User-Agent' => 'prime-revolution-cli',
+                    ],
+                ]
+            );
+
+            $responseBodyAsString = $response->getBody()->getContents();
+        } catch (ServerException $e) {
+            $response = $e->getResponse();
+            $responseBodyAsString = $response->getBody()->getContents();
+        }
+
+        $crawler = new Crawler();
+        $crawler->addHtmlContent($responseBodyAsString, 'UTF-8');
+
+        // This is an ugly XPath string, but the markup for this page is hideous.
+        $xPathQueryBase = '(//table[contains(attribute::class, "archive")]//tr[contains(attribute::class, "archiverow1") or contains(attribute::class, "archiverow2")])';
+        $showUrlList = $crawler->filterXPath($xPathQueryBase . '//td[1]//a/@href');
+        $showTitleList = $crawler->filterXPath($xPathQueryBase . '//td[1]/a');
+        $showDateList = $crawler->filterXPath($xPathQueryBase . '//td[2]');
+
+        for ($i = 0; $i < $showUrlList->count(); $i++) {
+            $showUrl = $showUrlList->getNode($i)->textContent;
+            $showTitle = $showTitleList->getNode($i)->textContent;
+            $showDate = $showDateList->getNode($i)->textContent;
+
+            $urlFragments = explode('=', $showUrl);
+            $showID = $urlFragments[count($urlFragments) - 1];
+
+            //echo $showID . '  ' . $showTitle . '  ' . $showDate, PHP_EOL;
+
+            $showList[] = [
+                'id' => $showID,
+                'title' => $showTitle,
+                'showData' => $showDate,
+            ];
+        }
+
+        return $showList;
     }
 
     /**
@@ -64,7 +146,6 @@ class FetchRevolution extends Command {
             // us to fall into this block with alarming frequency. Because we have no control over the response, we're
             // forced to handle that here. Yes, it's jank.
             $response = $e->getResponse();
-
             $responseBodyAsString = $response->getBody()->getContents();
         }
 

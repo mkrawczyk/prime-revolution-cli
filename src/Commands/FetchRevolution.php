@@ -12,30 +12,13 @@ use Symfony\Component\DomCrawler\Crawler;
 use Symfony\Component\Filesystem\Exception\IOExceptionInterface;
 use Symfony\Component\Filesystem\Filesystem;
 use Symfony\Component\Filesystem\Path;
+use Symfony\Component\Finder\Finder;
 use Symfony\Component\HttpClient\HttpClient;
 use Symfony\Contracts\HttpClient\Exception\TransportExceptionInterface;
 
 class FetchRevolution extends Command {
 
     private const QUERY_URL_BASE = 'http://prime.e-wrestling.org/content.php';
-
-    /**
-     * Has a list of all the shows in the format:
-     * <table class="archive">
-     *  <tr class="archiveheading">...</tr>
-     *  <tr class="archiverow1 or archiverow2">
-     *      <td>
-     *          <a href="content.php?p=results&id=SHOW_ID"> SHOW_TITLE </a>
-     *      </td>
-     *      <td>
-     *          SHOW_DATE
-     *      </td>
-     *      <td> Information we don't care about </td>
-     *      <td> More information we don't care about </td>
-     *  </tr>
-     * </table>
-     */
-    private const SHOW_CONTENT_LIST = 'http://prime.e-wrestling.org/content.php?p=archives';
 
     /**
      * Name of the command that we are building.
@@ -47,14 +30,40 @@ class FetchRevolution extends Command {
      */
     protected static $defaultDescription = 'Fetch all PRIME Revolution/supercard shows.';
 
+    private int $startTime;
+    private string $temporaryOutputDirectory;
+    private Filesystem $filesystem;
+
+    public function __construct(
+        private Client $client
+    ) {
+        parent::__construct();
+
+        $this->filesystem = new Filesystem();
+    }
+
     /**
      * @throws GuzzleException
      */
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
-        //$this->getShowByID(188);
+        $this->startTime = time();
+
+        $this->temporaryOutputDirectory = '/tmp/prime-revolution-cli/' . $this->startTime;
+        if (! $this->filesystem->exists($this->temporaryOutputDirectory)) {
+            $this->filesystem->mkdir($this->temporaryOutputDirectory);
+        }
+
         $showList = $this->getShowListFromArchive();
-        print_r($showList);
+        foreach ($showList as $show) {
+            $this->getShowByID($show['id']);
+        }
+
+//        $finder = new Finder();
+//        $finder->files($this->temporaryOutputDirectory);
+//        if ($finder->hasResults()) {
+//
+//        }
 
         return 0;
     }
@@ -68,25 +77,10 @@ class FetchRevolution extends Command {
     {
         $showList = [];
 
-        $client = new Client();
-
-        try {
-            $response = $client->request(
-                'GET',
-                self::SHOW_CONTENT_LIST,
-                [
-                    'headers' => [
-                        'Accept' => 'text/html; charset=UTF-8',
-                        'User-Agent' => 'prime-revolution-cli',
-                    ],
-                ]
-            );
-
-            $responseBodyAsString = $response->getBody()->getContents();
-        } catch (ServerException $e) {
-            $response = $e->getResponse();
-            $responseBodyAsString = $response->getBody()->getContents();
-        }
+        $queryParams= [
+            'p' => 'archives',
+        ];
+        $responseBodyAsString = $this->getSiteContent($queryParams);
 
         $crawler = new Crawler();
         $crawler->addHtmlContent($responseBodyAsString, 'UTF-8');
@@ -105,12 +99,10 @@ class FetchRevolution extends Command {
             $urlFragments = explode('=', $showUrl);
             $showID = $urlFragments[count($urlFragments) - 1];
 
-            //echo $showID . '  ' . $showTitle . '  ' . $showDate, PHP_EOL;
-
             $showList[] = [
                 'id' => $showID,
                 'title' => $showTitle,
-                'showData' => $showDate,
+                'showDate' => $showDate,
             ];
         }
 
@@ -122,32 +114,11 @@ class FetchRevolution extends Command {
      */
     private function getShowByID(int $showID): int
     {
-        $client = new Client();
-
-        try {
-            $response = $client->request(
-                'GET',
-                self::QUERY_URL_BASE,
-                [
-                    'query' => [
-                        'p' => 'results',
-                        'id' => $showID,
-                    ],
-                    'headers' => [
-                        'Accept' => 'text/html; charset=UTF-8',
-                        'User-Agent' => 'prime-revolution-cli',
-                    ],
-                ]
-            );
-
-            $responseBodyAsString = $response->getBody()->getContents();
-        } catch (ServerException $e) {
-            // The site that we're hitting is serving pages with both content and a 500 response code, which is causing
-            // us to fall into this block with alarming frequency. Because we have no control over the response, we're
-            // forced to handle that here. Yes, it's jank.
-            $response = $e->getResponse();
-            $responseBodyAsString = $response->getBody()->getContents();
-        }
+        $queryParams = [
+            'p' => 'results',
+            'id' => $showID,
+        ];
+        $responseBodyAsString = $this->getSiteContent($queryParams);
 
         $crawler = new Crawler();
         // Needed because the original Backstage script was the wild west of allowing stuff into the DB.
@@ -164,24 +135,26 @@ class FetchRevolution extends Command {
         $segmentTitles = $crawler->filterXPath('//h2[contains(attribute::class, "results")]');
         $segmentContent = $crawler->filterXPath('//div[contains(attribute::class, "resultsdiv")]');
 
-        echo $this->buildShowStringFromResponse($showTitle, $showLocation, $segmentTitles, $segmentContent);
+        $this->buildShowStringFromResponse($showID, $showTitle, $showLocation, $segmentTitles, $segmentContent);
 
         return 0;
     }
 
     /**
+     * @param int $id
      * @param string $title
      * @param string $location
      * @param Crawler $segmentTitles
      * @param Crawler $segmentContent
-     * @return string
+     * @return void
      */
     private function buildShowStringFromResponse(
+        int $id,
         string $title,
         string $location,
         Crawler $segmentTitles,
         Crawler $segmentContent
-    ): string {
+    ): void {
         $showContentString = strtoupper($title) . PHP_EOL . $location . PHP_EOL;
         $showContentString .= str_repeat('-', 60) . PHP_EOL . PHP_EOL;
 
@@ -192,6 +165,43 @@ class FetchRevolution extends Command {
                 . PHP_EOL . PHP_EOL . PHP_EOL;
         }
 
-        return $showContentString;
+        $homepath = $_SERVER['HOME'];
+        $outputBaseDirectory = $homepath . '/prime-revolution-cli';
+        $filesystem = new Filesystem();
+        if (! $filesystem->exists($outputBaseDirectory)) {
+            $filesystem->mkdir($outputBaseDirectory);
+        }
+
+        $showDate = date('Y-m-d', strtotime(trim(explode('/', $location)[0])));
+
+        $filesystem->appendToFile($this->temporaryOutputDirectory
+            . "/{$id}_{$showDate}_{$title}.txt", $showContentString);
+    }
+
+    /**
+     * @throws GuzzleException
+     */
+    private function getSiteContent(array $queryParams): string
+    {
+        try {
+            $response = $this->client->request(
+                'GET',
+                self::QUERY_URL_BASE,
+                [
+                    'query' => $queryParams,
+                    'headers' => [
+                        'Accept' => 'text/html; charset=UTF-8',
+                        'User-Agent' => 'prime-revolution-cli',
+                    ],
+                ]
+            );
+
+            $responseBodyAsString = $response->getBody()->getContents();
+        } catch (ServerException $e) {
+            $response = $e->getResponse();
+            $responseBodyAsString = $response->getBody()->getContents();
+        }
+
+        return $responseBodyAsString;
     }
 }

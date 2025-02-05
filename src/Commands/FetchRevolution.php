@@ -30,7 +30,6 @@ class FetchRevolution extends Command {
      */
     protected static $defaultDescription = 'Fetch all PRIME Revolution/supercard shows.';
 
-    private int $startTime;
     private string $temporaryOutputDirectory;
     private Filesystem $filesystem;
 
@@ -47,9 +46,9 @@ class FetchRevolution extends Command {
      */
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
-        $this->startTime = time();
+        $startTime = time();
 
-        $this->temporaryOutputDirectory = '/tmp/prime-revolution-cli/' . $this->startTime;
+        $this->temporaryOutputDirectory = '/tmp/prime-revolution-cli/' . $startTime;
         if (! $this->filesystem->exists($this->temporaryOutputDirectory)) {
             $this->filesystem->mkdir($this->temporaryOutputDirectory);
         }
@@ -141,7 +140,6 @@ class FetchRevolution extends Command {
     }
 
     /**
-     * @param int $id
      * @param string $title
      * @param string $location
      * @param Crawler $segmentTitles
@@ -149,7 +147,6 @@ class FetchRevolution extends Command {
      * @return void
      */
     private function buildShowStringFromResponse(
-        int $id,
         string $title,
         string $location,
         Crawler $segmentTitles,
@@ -175,7 +172,7 @@ class FetchRevolution extends Command {
         $showDate = date('Y-m-d', strtotime(trim(explode('/', $location)[0])));
 
         $filesystem->appendToFile($this->temporaryOutputDirectory
-            . "/{$id}_{$showDate}_{$title}.txt", $showContentString);
+            . "/{$showDate}_{$title}.txt", $showContentString);
     }
 
     /**

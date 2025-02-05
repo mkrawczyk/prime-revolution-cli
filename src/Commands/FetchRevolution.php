@@ -15,6 +15,8 @@ use Symfony\Component\Filesystem\Path;
 use Symfony\Component\Finder\Finder;
 use Symfony\Component\HttpClient\HttpClient;
 use Symfony\Contracts\HttpClient\Exception\TransportExceptionInterface;
+use Mkrawczyk\PrimeRevolutionCli\Models\PrimeCard;
+use ZipArchive;
 
 class FetchRevolution extends Command {
 
@@ -52,17 +54,41 @@ class FetchRevolution extends Command {
         if (! $this->filesystem->exists($this->temporaryOutputDirectory)) {
             $this->filesystem->mkdir($this->temporaryOutputDirectory);
         }
+        echo 'Creating temporary output directory ' . $this->temporaryOutputDirectory . PHP_EOL;
 
         $showList = $this->getShowListFromArchive();
         foreach ($showList as $show) {
             $this->getShowByID($show['id']);
+            echo 'Processing PRIME show with ID ' . $show['id'] . PHP_EOL;
         }
 
-//        $finder = new Finder();
-//        $finder->files($this->temporaryOutputDirectory);
-//        if ($finder->hasResults()) {
-//
-//        }
+        $finder = new Finder();
+        $finder->files()->in($this->temporaryOutputDirectory);
+        if ($finder->hasResults()) {
+            $zipArchive = new ZipArchive();
+
+            $homepath = $_SERVER['HOME'];
+            $outputBaseDirectory = $homepath . '/prime-revolution-cli';
+
+            if (! $this->filesystem->exists($outputBaseDirectory)) {
+                $this->filesystem->mkdir($outputBaseDirectory);
+            }
+            $outputArchive = $outputBaseDirectory . '/prime-revolution-archive.'
+                . date('Y-m-d_H-i-s', time()) . '.zip';
+            $zipArchive->open($outputArchive, ZipArchive::CREATE);
+
+            foreach ($finder as $file) {
+                $zipArchive->addFile($file->getRealPath(), $file->getRelativePathname());
+            }
+            $zipArchive->close();
+
+            // We need to do a second iteration, because cleaning up the files must occur AFTER we call
+            // ::close() on the ZipArchive, otherwise nothing gets written to it.
+            foreach ($finder as $file) {
+                $this->filesystem->remove($file->getRealPath());
+            }
+            $this->filesystem->remove($this->temporaryOutputDirectory);
+        }
 
         return 0;
     }
@@ -123,56 +149,22 @@ class FetchRevolution extends Command {
         // Needed because the original Backstage script was the wild west of allowing stuff into the DB.
         $crawler->addHtmlContent($responseBodyAsString, 'UTF-8');
 
-        $showTitle = $crawler->filterXPath('//div[contains(attribute::class, "results")]//h1')
-            ->getNode(0)
-            ->textContent;
+        $primeCard = new PrimeCard($crawler);
+        $primeCard->buildCardFromCrawler();
 
-        $showLocation = $crawler->filterXPath('//div[contains(attribute::class, "results")]//h6')
-            ->getNode(0)
-            ->textContent;
-
-        $segmentTitles = $crawler->filterXPath('//h2[contains(attribute::class, "results")]');
-        $segmentContent = $crawler->filterXPath('//div[contains(attribute::class, "resultsdiv")]');
-
-        $this->buildShowStringFromResponse($showID, $showTitle, $showLocation, $segmentTitles, $segmentContent);
+        $this->buildShowStringFromResponse($primeCard);
 
         return 0;
     }
 
-    /**
-     * @param string $title
-     * @param string $location
-     * @param Crawler $segmentTitles
-     * @param Crawler $segmentContent
-     * @return void
-     */
     private function buildShowStringFromResponse(
-        string $title,
-        string $location,
-        Crawler $segmentTitles,
-        Crawler $segmentContent
+        PrimeCard $card
     ): void {
-        $showContentString = strtoupper($title) . PHP_EOL . $location . PHP_EOL;
-        $showContentString .= str_repeat('-', 60) . PHP_EOL . PHP_EOL;
+        $showContentString = $card->getCardAsString();
 
-        for ($segmentCount = 0; $segmentCount < $segmentTitles->count(); $segmentCount++) {
-            $showContentString .= strtoupper($segmentTitles->getNode($segmentCount)->textContent)
-                . PHP_EOL
-                . $segmentContent->getNode($segmentCount)->textContent
-                . PHP_EOL . PHP_EOL . PHP_EOL;
-        }
-
-        $homepath = $_SERVER['HOME'];
-        $outputBaseDirectory = $homepath . '/prime-revolution-cli';
         $filesystem = new Filesystem();
-        if (! $filesystem->exists($outputBaseDirectory)) {
-            $filesystem->mkdir($outputBaseDirectory);
-        }
-
-        $showDate = date('Y-m-d', strtotime(trim(explode('/', $location)[0])));
-
         $filesystem->appendToFile($this->temporaryOutputDirectory
-            . "/{$showDate}_{$title}.txt", $showContentString);
+            . "/{$card->getDateFromLocation()}_{$card->getTitle()}.txt", $showContentString);
     }
 
     /**

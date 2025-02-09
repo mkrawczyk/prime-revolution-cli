@@ -11,9 +11,9 @@ class PrimeCard {
     private const CARD_SEGMENT_TITLES_XPATH = '//h2[contains(attribute::class, "results")]';
     private const CARD_SEGMENT_CONTENT_XPATH = '//div[contains(attribute::class, "resultsdiv")]';
 
-    private ?string $title;
-    private ?string $location;
-    private ?array $segments;
+    private string $title;
+    private string $location;
+    private array $segments;
 
     public function __construct(
         private Crawler $crawler

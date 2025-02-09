@@ -1,9 +1,12 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Mkrawczyk\PrimeRevolutionCli\Commands;
 
 use GuzzleHttp\Client;
 use GuzzleHttp\Exception\GuzzleException;
+use Mkrawczyk\PrimeRevolutionCli\Models\BaseCardDetails;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
@@ -42,9 +45,9 @@ class FetchRevolution extends Command {
 
         $showList = $contentService->getShowListFromArchive();
         foreach ($showList as $show) {
-            echo 'Processing PRIME show with ID ' . $show['id'] . PHP_EOL;
+            echo 'Processing PRIME show with ID ' . $show->getId() . PHP_EOL;
 
-            $primeCard = $contentService->getPrimeCardByID($show['id']);
+            $primeCard = $contentService->getPrimeCardByID($show->getId());
 
             $fileSystemService->createFileFromPrimeCard($primeCard);
         }

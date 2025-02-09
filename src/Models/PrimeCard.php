@@ -1,7 +1,10 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Mkrawczyk\PrimeRevolutionCli\Models;
 
+use DOMNode;
 use Symfony\Component\DomCrawler\Crawler;
 
 class PrimeCard {
@@ -13,6 +16,9 @@ class PrimeCard {
 
     private string $title;
     private string $location;
+    /**
+     * @var PrimeCardSegment[]
+     */
     private array $segments;
 
     public function __construct(
@@ -20,15 +26,24 @@ class PrimeCard {
     ) {
     }
 
+    private function getNodeContent(Crawler $crawler, string $defaultText = ''): string
+    {
+        return $crawler->getNode(0) instanceof DOMNode
+            ? $crawler->getNode(0)->textContent
+            : $defaultText;
+    }
+
     public function buildCardFromCrawler(): void
     {
-        $this->title = $this->crawler->filterXPath(self::CARD_TITLE_XPATH)
-            ->getNode(0)
-            ->textContent;
+        $this->title = $this->getNodeContent(
+            $this->crawler->filterXPath(self::CARD_TITLE_XPATH),
+            'title unknown'
+        );
 
-        $this->location = $this->crawler->filterXPath(self::CARD_LOCATION_XPATH)
-            ->getNode(0)
-            ->textContent;
+        $this->location = $this->getNodeContent(
+            $this->crawler->filterXPath(self::CARD_LOCATION_XPATH),
+            'location undefined'
+        );
 
         $segmentTitles = $this->crawler->filterXPath(self::CARD_SEGMENT_TITLES_XPATH);
         $segmentContent = $this->crawler->filterXPath(self::CARD_SEGMENT_CONTENT_XPATH);
@@ -75,11 +90,16 @@ class PrimeCard {
 
     public function getDateFromLocation(): ?string
     {
-        return date('Y-m-d', strtotime(trim(explode('/', $this->location)[0])));
+        $showDate = strtotime(trim(explode('/', $this->location)[0]));
+        if ($showDate === false) {
+            return 'unknown';
+        }
+
+        return date('Y-m-d', $showDate);
     }
 
     /**
-     * @return array|null
+     * @return PrimeCardSegment[]|null
      */
     public function getSegments(): ?array
     {

@@ -1,10 +1,14 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Mkrawczyk\PrimeRevolutionCli\Services;
 
+use DOMNode;
 use GuzzleHttp\Client;
 use GuzzleHttp\Exception\GuzzleException;
 use GuzzleHttp\Exception\ServerException;
+use Mkrawczyk\PrimeRevolutionCli\Models\BaseCardDetails;
 use Mkrawczyk\PrimeRevolutionCli\Models\PrimeCard;
 use Symfony\Component\DomCrawler\Crawler;
 
@@ -22,7 +26,7 @@ class ContentService {
     ) {}
 
     /**
-     * @return list<array{id: int, title: string, showDate: string}>
+     * @return BaseCardDetails[]
      *
      * @throws GuzzleException
      */
@@ -30,10 +34,12 @@ class ContentService {
     {
         $showList = [];
 
-        $queryParams= [
-            'p' => 'archives',
-        ];
-        $responseBodyAsString = $this->getSiteContent($this->client, $queryParams);
+        $responseBodyAsString = $this->getSiteContent(
+            $this->client,
+            [
+                'p' => 'archives',
+            ]
+        );
 
         $this->crawler->addHtmlContent($responseBodyAsString, 'UTF-8');
 
@@ -41,22 +47,28 @@ class ContentService {
         $showTitleList = $this->crawler->filterXPath(self::XPATH_QUERY_BASE . '//td[1]/a');
         $showDateList = $this->crawler->filterXPath(self::XPATH_QUERY_BASE . '//td[2]');
 
-        for ($i = 0; $i < $showUrlList->count(); $i++) {
-            $showUrl = $showUrlList->getNode($i)->textContent;
-            $showTitle = $showTitleList->getNode($i)->textContent;
-            $showDate = $showDateList->getNode($i)->textContent;
+        // This block makes the assumption that we will always have the same number of URLs,
+        // titles, and dates. We're doing this both because of how the Backstage Script the original
+        // PRIME was built on operates, and because the markup for that site is... well, iffy.
+        for ($index = 0; $index < $showUrlList->count(); $index++) {
+            $showUrl = $this->getNodeContentByIndex($showUrlList, $index);
+            $showTitle = $this->getNodeContentByIndex($showTitleList, $index);
+            $showDate = $this->getNodeContentByIndex($showDateList, $index);
 
             $urlFragments = explode('=', $showUrl);
             $showID = intval($urlFragments[count($urlFragments) - 1]);
 
-            $showList[] = [
-                'id' => $showID,
-                'title' => $showTitle,
-                'showDate' => $showDate,
-            ];
+            $showList[] = new BaseCardDetails($showID, $showTitle, $showDate);
         }
 
         return $showList;
+    }
+
+    private function getNodeContentByIndex(Crawler $node, int $index): string
+    {
+        return $node->getNode($index) instanceof DOMNode
+            ? $node->getNode($index)->textContent
+            : '';
     }
 
     /**
@@ -64,13 +76,14 @@ class ContentService {
      */
     public function getPrimeCardByID(int $showID): PrimeCard
     {
-        $queryParams = [
-            'p' => 'results',
-            'id' => $showID,
-        ];
-        $responseBodyAsString = $this->getSiteContent($this->client, $queryParams);
+        $responseBodyAsString = $this->getSiteContent(
+            $this->client,
+            [
+                'p' => 'results',
+                'id' => $showID,
+            ]
+        );
 
-        // Needed because the original Backstage script was the wild west of allowing stuff into the DB.
         $this->crawler->addHtmlContent($responseBodyAsString);
 
         $primeCard = new PrimeCard($this->crawler);

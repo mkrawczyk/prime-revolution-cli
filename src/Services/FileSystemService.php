@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Mkrawczyk\PrimeRevolutionCli\Services;
 
 use Mkrawczyk\PrimeRevolutionCli\Models\PrimeCard;

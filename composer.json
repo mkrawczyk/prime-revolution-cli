@@ -23,7 +23,8 @@
         "ext-curl": "*",
         "symfony/dom-crawler": "^6.0",
         "symfony/finder": "^6.0",
-        "ext-zip": "^1.19"
+        "ext-zip": "^1.19",
+        "ext-dom": "20031129"
     },
     "require-dev": {
         "phpstan/phpstan": "^2.1"

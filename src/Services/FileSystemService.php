@@ -41,8 +41,8 @@ class FileSystemService {
         $this->finder->files()->in($this->temporaryOutputDirectory);
         if ($this->finder->hasResults()) {
 
-            $homepath = $_SERVER['HOME'];
-            $outputBaseDirectory = $homepath . '/prime-revolution-cli';
+            $homePath = $_SERVER['HOME'];
+            $outputBaseDirectory = $homePath . '/prime-revolution-cli';
 
             if (! $this->filesystem->exists($outputBaseDirectory)) {
                 $this->filesystem->mkdir($outputBaseDirectory);

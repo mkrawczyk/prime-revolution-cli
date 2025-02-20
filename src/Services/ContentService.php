@@ -56,9 +56,9 @@ class ContentService {
         $archiveCollection = $this->crawler->filterXPath(self::ARCHIVE_XPATH_BASE)->each(
             function (Crawler $node): ArchiveItem {
                 return new ArchiveItem(
-                    $node->filterXPath('//td[1]//a/@href')->getNode(0)->textContent,
-                    $node->filterXPath('//td[1]/a')->getNode(0)->textContent,
-                    $node->filterXPath('//td[2]')->getNode(0)->textContent
+                    $node->filterXPath('//td[1]//a/@href')->getNode(0)->textContent ?? '',
+                    $node->filterXPath('//td[1]/a')->getNode(0)->textContent ?? '',
+                    $node->filterXPath('//td[2]')->getNode(0)->textContent ?? ''
                 );
             }
         );
@@ -67,6 +67,10 @@ class ContentService {
         // titles, and dates. We're doing this both because of how the Backstage Script the original
         // PRIME was built on operates, and because the markup for that site is... well, iffy.
         foreach ($archiveCollection as $archiveItem) {
+            if (! $archiveItem instanceof ArchiveItem) {
+                continue;
+            }
+
             if (empty($archiveItem->getUrl())) {
                 continue;
             }

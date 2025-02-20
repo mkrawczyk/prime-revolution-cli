@@ -8,16 +8,23 @@ use DOMNode;
 use GuzzleHttp\Client;
 use GuzzleHttp\Exception\GuzzleException;
 use GuzzleHttp\Exception\ServerException;
+use Mkrawczyk\PrimeRevolutionCli\Models\ArchiveItem;
 use Mkrawczyk\PrimeRevolutionCli\Models\BaseCardDetails;
 use Mkrawczyk\PrimeRevolutionCli\Models\PrimeCard;
 use Symfony\Component\DomCrawler\Crawler;
 
 class ContentService {
 
+    /**
+     * Base URL for the old PRIME (2007-ish through 2012) website.
+     */
     private const QUERY_URL_BASE = 'http://prime.e-wrestling.org/content.php';
 
-    // This is an ugly XPath string, but the markup for this page is very much a product of the mid-2000s.
-    private const XPATH_QUERY_BASE = '(//table[contains(attribute::class, "archive")]//'
+    /**
+     * The markup on the show archives page that we're scraping is very much a product of the mid-2000s before
+     * semantic markup became a thing, so it leans on tables for its formatting.
+     */
+    private const ARCHIVE_XPATH_BASE = '(//table[contains(attribute::class, "archive")]//'
         . 'tr[contains(attribute::class, "archiverow1") or contains(attribute::class, "archiverow2")])';
 
     public function __construct(
@@ -26,11 +33,11 @@ class ContentService {
     ) {}
 
     /**
-     * @return BaseCardDetails[]
+     * @return BaseCardDetails[]|false
      *
      * @throws GuzzleException
      */
-    public function getShowListFromArchive(): array
+    public function getShowListFromArchive(): array|false
     {
         $showList = [];
 
@@ -41,34 +48,45 @@ class ContentService {
             ]
         );
 
-        $this->crawler->addHtmlContent($responseBodyAsString, 'UTF-8');
+        if (empty($responseBodyAsString)) {
+            return false;
+        }
 
-        $showUrlList = $this->crawler->filterXPath(self::XPATH_QUERY_BASE . '//td[1]//a/@href');
-        $showTitleList = $this->crawler->filterXPath(self::XPATH_QUERY_BASE . '//td[1]/a');
-        $showDateList = $this->crawler->filterXPath(self::XPATH_QUERY_BASE . '//td[2]');
+        $this->crawler->addHtmlContent($responseBodyAsString, 'UTF-8');
+        $archiveCollection = $this->crawler->filterXPath(self::ARCHIVE_XPATH_BASE)->each(
+            function (Crawler $node): ArchiveItem {
+                return new ArchiveItem(
+                    $node->filterXPath('//td[1]//a/@href')->getNode(0)->textContent,
+                    $node->filterXPath('//td[1]/a')->getNode(0)->textContent,
+                    $node->filterXPath('//td[2]')->getNode(0)->textContent
+                );
+            }
+        );
 
         // This block makes the assumption that we will always have the same number of URLs,
         // titles, and dates. We're doing this both because of how the Backstage Script the original
         // PRIME was built on operates, and because the markup for that site is... well, iffy.
-        for ($index = 0; $index < $showUrlList->count(); $index++) {
-            $showUrl = $this->getNodeContentByIndex($showUrlList, $index);
-            $showTitle = $this->getNodeContentByIndex($showTitleList, $index);
-            $showDate = $this->getNodeContentByIndex($showDateList, $index);
+        foreach ($archiveCollection as $archiveItem) {
+            if (empty($archiveItem->getUrl())) {
+                continue;
+            }
 
-            $urlFragments = explode('=', $showUrl);
-            $showID = intval($urlFragments[count($urlFragments) - 1]);
+            $urlFragments = parse_url($archiveItem->getUrl());
+            if (empty($urlFragments['query'])) {
+                continue;
+            }
+            parse_str($urlFragments['query'], $query);
 
-            $showList[] = new BaseCardDetails($showID, $showTitle, $showDate);
+            if (empty($query['id'])) {
+                continue;
+            }
+
+            $showList[] = new BaseCardDetails(intval($query['id']), $archiveItem->getTitle(), $archiveItem->getDate());
         }
 
-        return $showList;
-    }
+        $this->crawler->clear();
 
-    private function getNodeContentByIndex(Crawler $node, int $index): string
-    {
-        return $node->getNode($index) instanceof DOMNode
-            ? $node->getNode($index)->textContent
-            : '';
+        return $showList;
     }
 
     /**
@@ -88,6 +106,8 @@ class ContentService {
 
         $primeCard = new PrimeCard($this->crawler);
         $primeCard->buildCardFromCrawler();
+
+        $this->crawler->clear();
 
         return $primeCard;
     }

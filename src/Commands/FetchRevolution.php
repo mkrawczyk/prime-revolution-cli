@@ -43,6 +43,11 @@ class FetchRevolution extends Command {
         $fileSystemService->setTemporaryOutputDirectory();
 
         $showList = $contentService->getShowListFromArchive();
+        if ($showList === false) {
+            echo 'Could not fetch list of PRIME shows from the archive. Aborting.';
+            return 1;
+        }
+
         foreach ($showList as $show) {
             echo 'Processing PRIME show with ID ' . $show->getId() . PHP_EOL;
 

@@ -43,7 +43,11 @@ class FileSystemService {
         $this->finder->files()->in($this->temporaryOutputDirectory);
         if ($this->finder->hasResults()) {
 
-            $homePath = $_SERVER['HOME'];
+            // Checking the server for the user's home directory, and then defaulting to ~/ if we don't
+            // have one for whatever reason. Needed for phpstan level 9.
+            $homePath = (! empty($_SERVER['HOME']) && is_string($_SERVER['HOME']))
+                ? $_SERVER['HOME']
+                : '~/';
             $outputBaseDirectory = $homePath . '/prime-revolution-cli';
 
             if (! $this->filesystem->exists($outputBaseDirectory)) {

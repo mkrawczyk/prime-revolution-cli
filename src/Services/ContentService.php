@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace Mkrawczyk\PrimeRevolutionCli\Services;
 
-use DOMNode;
 use GuzzleHttp\Client;
 use GuzzleHttp\Exception\GuzzleException;
 use GuzzleHttp\Exception\ServerException;

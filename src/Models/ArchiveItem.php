@@ -10,7 +10,8 @@ class ArchiveItem
         private string $url,
         private string $title,
         private string $date
-    ) {}
+    ) {
+    }
 
     public function getUrl(): string
     {

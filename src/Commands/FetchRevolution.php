@@ -16,8 +16,8 @@ use Mkrawczyk\PrimeRevolutionCli\Services\ContentService;
 use Mkrawczyk\PrimeRevolutionCli\Services\FileSystemService;
 use ZipArchive;
 
-class FetchRevolution extends Command {
-
+class FetchRevolution extends Command
+{
     /**
      * Name of the command that we are building.
      */

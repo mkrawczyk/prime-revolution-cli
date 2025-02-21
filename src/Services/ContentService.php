@@ -13,8 +13,8 @@ use Mkrawczyk\PrimeRevolutionCli\Models\BaseCardDetails;
 use Mkrawczyk\PrimeRevolutionCli\Models\PrimeCard;
 use Symfony\Component\DomCrawler\Crawler;
 
-class ContentService {
-
+class ContentService
+{
     /**
      * Base URL for the old PRIME (2007-ish through 2012) website.
      */
@@ -30,7 +30,8 @@ class ContentService {
     public function __construct(
         private Client $client,
         private Crawler $crawler
-    ) {}
+    ) {
+    }
 
     /**
      * @return BaseCardDetails[]|false

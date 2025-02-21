@@ -7,8 +7,8 @@ namespace Mkrawczyk\PrimeRevolutionCli\Models;
 use DOMNode;
 use Symfony\Component\DomCrawler\Crawler;
 
-class PrimeCardSegment {
-
+class PrimeCardSegment
+{
     public function __construct(
         private ?string $title = null,
         private ?string $content = null

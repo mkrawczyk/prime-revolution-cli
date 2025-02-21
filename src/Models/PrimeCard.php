@@ -7,8 +7,8 @@ namespace Mkrawczyk\PrimeRevolutionCli\Models;
 use DOMNode;
 use Symfony\Component\DomCrawler\Crawler;
 
-class PrimeCard {
-
+class PrimeCard
+{
     private const CARD_TITLE_XPATH = '//div[contains(attribute::class, "results")]//h1';
     private const CARD_LOCATION_XPATH = '//div[contains(attribute::class, "results")]//h6';
     private const CARD_SEGMENT_TITLES_XPATH = '//h2[contains(attribute::class, "results")]';

@@ -9,15 +9,16 @@ use Symfony\Component\Filesystem\Filesystem;
 use Symfony\Component\Finder\Finder;
 use ZipArchive;
 
-class FileSystemService {
-
+class FileSystemService
+{
     private string $temporaryOutputDirectory;
 
     public function __construct(
         private Filesystem $filesystem,
         private Finder $finder,
         private ZipArchive $zipArchive
-    ) {}
+    ) {
+    }
 
     public function setTemporaryOutputDirectory(): void
     {
@@ -42,7 +43,6 @@ class FileSystemService {
     {
         $this->finder->files()->in($this->temporaryOutputDirectory);
         if ($this->finder->hasResults()) {
-
             // Checking the server for the user's home directory, and then defaulting to ~/ if we don't
             // have one for whatever reason. Needed for phpstan level 9.
             $homePath = (! empty($_SERVER['HOME']) && is_string($_SERVER['HOME']))

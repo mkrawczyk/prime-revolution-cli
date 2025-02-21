@@ -10,7 +10,8 @@ class BaseCardDetails
         private int $id,
         private string $title,
         private string $date
-    ) {}
+    ) {
+    }
 
     /**
      * @return int

@@ -45,6 +45,9 @@
 # Composer PHAR
 /composer.phar
 
+# Composer lock file
+/composer.lock
+
 # Backup entities generated with doctrine:generate:entities command
 **/Entity/*~
 

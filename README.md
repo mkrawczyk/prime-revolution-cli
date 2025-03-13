@@ -2,7 +2,7 @@
 
 A Symfony 6 command line interface to scrape the old (2005-2012ish) PRIME e-wrestling website for content related to wrestling cards and supershows. Because of the nature of this tool and its use to fetch legacy content, it is very much a "run once" type of application. It was built because the people in charge of running that organization asked if there was an easy way to get legacy content from the website, as they no longer had credentials to access the administrative portal, nor were they able to secure a backup of the database from the person hosting the site.
 
-**NOTE:** Some of the content there is problematic even in the context of the era it was written in. The existence of this app does not endorse any of this content, it exists simply as an archival method.
+**NOTE:** Some of the content there is problematic even in the context of the era in which it was written. The existence of this app does not endorse any of this content, it exists simply as an archival method.
 
 ## Design Considerations
 

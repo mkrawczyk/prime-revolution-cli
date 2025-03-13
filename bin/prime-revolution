@@ -1,0 +1,16 @@
+#!/usr/bin/env php
+<?php
+
+require __DIR__.'/../vendor/autoload.php';
+
+use Mkrawczyk\PrimeRevolutionCli\Commands\FetchRevolution;
+use Symfony\Component\Console\Application;
+
+$application = new Application();
+
+$application->add(new FetchRevolution());
+try {
+    $application->run();
+} catch (Exception $e) {
+    echo $e->getMessage(), PHP_EOL;
+}

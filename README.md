@@ -4,6 +4,7 @@ A Symfony 6 command line interface to scrape the old (2005-2012ish) PRIME e-wres
 
 **NOTE:** Some of the content there is problematic even in the context of the era in which it was written. The existence of this app does not endorse any of this content, it exists simply as an archival method.
 
+
 ## Design Considerations
 
 ### 1. Outdated Markup
@@ -11,7 +12,6 @@ A Symfony 6 command line interface to scrape the old (2005-2012ish) PRIME e-wres
 The source website is very much a product of its time, and is not structured in a semantic fashion. Despite being updated in the later half of the aughts, there is still an overreliance on tables on some pages. Further, there were little rules or restrictions placed on site users when it came to authoring their content, and no rules exist to keep a consistent styling within the context of an on-card segment. To that end the people who asked if scraping the site was possible were okay with the idea of some individual formatting choices coming along for the ride, provided they had the actual text.
 
 ![Screen Shot 2025-02-05 at 11 39 14 AM](https://github.com/user-attachments/assets/4c104bac-6f06-40c7-b974-34722f4ca827)
-
 
 ![Screen Shot 2025-02-05 at 11 39 56 AM](https://github.com/user-attachments/assets/eeae4ff0-a27b-4fa1-893e-bfd9ea8c64d2)
 
@@ -21,7 +21,12 @@ You will see places in this code where an exception is caught when trying to loa
 
 ### 3. Command Output
 
-All file system paths assume that I am the only person running this code.
+All file system paths assume that I am the only person running this code. It was designed to be run only once (when mature enough).
+
+![Screen Shot 2025-03-12 at 11 03 09 PM](https://github.com/user-attachments/assets/60e2f5a7-3b62-4044-9b7e-530b5a10cfc1)
+
+![Screen Shot 2025-03-12 at 11 07 43 PM](https://github.com/user-attachments/assets/6c072f8c-53a5-453f-84c3-315f6ea9a840)
+
 
 ## What's e-wrestling?
 

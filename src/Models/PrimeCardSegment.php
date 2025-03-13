@@ -16,37 +16,10 @@ class PrimeCardSegment
     }
 
     /**
-     * @return string
+     * Sets the title and content block based on the offset provided. There is likely a cleaner solution for this
+     * but given the way the page's markup is structured we (I) opted for a quick and dirty approach based on
+     * the offset of where the segment appears within the show as a whole.
      */
-    public function getTitle(): string
-    {
-        return $this->title ?? '';
-    }
-
-    /**
-     * @param string $title
-     */
-    public function setTitle(string $title): void
-    {
-        $this->title = $title;
-    }
-
-    /**
-     * @return string
-     */
-    public function getContent(): string
-    {
-        return $this->content ?? '';
-    }
-
-    /**
-     * @param string $content
-     */
-    public function setContent(string $content): void
-    {
-        $this->content = $content;
-    }
-
     public function buildFromCrawlerByOffset(Crawler $listTitles, Crawler $listContent, int $offset): void
     {
         $this->title = $listTitles->getNode($offset) instanceof DOMNode

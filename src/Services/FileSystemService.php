@@ -30,13 +30,11 @@ class FileSystemService
         }
     }
 
-    public function createFileFromPrimeCard(
-        PrimeCard $card
-    ): void {
+    public function createFileFromPrimeCard(PrimeCard $card): void {
         $showContentString = $card->getCardAsString();
 
         $this->filesystem->appendToFile($this->temporaryOutputDirectory
-            . "/{$card->getDateFromLocation()}_{$card->getTitle()}.txt", $showContentString);
+            . "/{$card->getDateFromLocationString()}_{$card->getTitle()}.txt", $showContentString);
     }
 
     public function createZipArchiveFromFinder(): void

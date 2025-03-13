@@ -9,10 +9,25 @@ use Symfony\Component\DomCrawler\Crawler;
 
 class PrimeCard
 {
-    private const CARD_TITLE_XPATH = '//div[contains(attribute::class, "results")]//h1';
-    private const CARD_LOCATION_XPATH = '//div[contains(attribute::class, "results")]//h6';
-    private const CARD_SEGMENT_TITLES_XPATH = '//h2[contains(attribute::class, "results")]';
-    private const CARD_SEGMENT_CONTENT_XPATH = '//div[contains(attribute::class, "resultsdiv")]';
+    /**
+     * Xpath query for where the name of the show/card is held in the markup.
+     */
+    private const string CARD_TITLE_XPATH = '//div[contains(attribute::class, "results")]//h1';
+
+    /**
+     * Xpath query for the where this fictitious event is being held.
+     */
+    private const string CARD_LOCATION_XPATH = '//div[contains(attribute::class, "results")]//h6';
+
+    /**
+     * Query for how the segment titles are structured.
+     */
+    private const string CARD_SEGMENT_TITLES_XPATH = '//h2[contains(attribute::class, "results")]';
+
+    /**
+     * Query for fetching individual segment content.
+     */
+    private const string CARD_SEGMENT_CONTENT_XPATH = '//div[contains(attribute::class, "resultsdiv")]';
 
     private string $title;
     private string $location;
@@ -72,23 +87,17 @@ class PrimeCard
         return $contentString;
     }
 
-    /**
-     * @return string|null
-     */
     public function getTitle(): ?string
     {
         return $this->title;
     }
 
-    /**
-     * @return string|null
-     */
     public function getLocation(): ?string
     {
         return $this->location;
     }
 
-    public function getDateFromLocation(): ?string
+    public function getDateFromLocationString(): string
     {
         $showDate = strtotime(trim(explode('/', $this->location)[0]));
         if ($showDate === false) {
@@ -96,13 +105,5 @@ class PrimeCard
         }
 
         return date('Y-m-d', $showDate);
-    }
-
-    /**
-     * @return PrimeCardSegment[]|null
-     */
-    public function getSegments(): ?array
-    {
-        return $this->segments;
     }
 }

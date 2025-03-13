@@ -6,6 +6,9 @@ namespace Mkrawczyk\PrimeRevolutionCli\Models;
 
 class ArchiveItem
 {
+    /**
+     * TODO: Refactor or remove this as well. Only $url is used anywhere.
+     */
     public function __construct(
         private string $url,
         private string $title,

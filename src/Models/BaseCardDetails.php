@@ -6,10 +6,11 @@ namespace Mkrawczyk\PrimeRevolutionCli\Models;
 
 class BaseCardDetails
 {
+    /**
+     * TODO: Refactor or remove this class. It's only being used for one piece of data.
+     */
     public function __construct(
-        private int $id,
-        private string $title,
-        private string $date
+        private int $id
     ) {
     }
 
@@ -19,21 +20,5 @@ class BaseCardDetails
     public function getId(): int
     {
         return $this->id;
-    }
-
-    /**
-     * @return string
-     */
-    public function getTitle(): string
-    {
-        return $this->title;
-    }
-
-    /**
-     * @return string
-     */
-    public function getDate(): string
-    {
-        return $this->date;
     }
 }

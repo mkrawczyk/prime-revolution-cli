@@ -15,15 +15,15 @@ use Symfony\Component\DomCrawler\Crawler;
 class ContentService
 {
     /**
-     * Base URL for the old PRIME (2007-ish through 2012) website.
+     * Base URL for the old PRIME (2005-ish through 2012) website.
      */
-    private const QUERY_URL_BASE = 'http://prime.e-wrestling.org/content.php';
+    private const string QUERY_URL_BASE = 'http://prime.e-wrestling.org/content.php';
 
     /**
      * The markup on the show archives page that we're scraping is very much a product of the mid-2000s before
      * semantic markup became a thing, so it leans on tables for its formatting.
      */
-    private const ARCHIVE_XPATH_BASE = '(//table[contains(attribute::class, "archive")]//'
+    private const string ARCHIVE_XPATH_BASE = '(//table[contains(attribute::class, "archive")]//'
         . 'tr[contains(attribute::class, "archiverow1") or contains(attribute::class, "archiverow2")])';
 
     public function __construct(
@@ -85,7 +85,7 @@ class ContentService
                 continue;
             }
 
-            $showList[] = new BaseCardDetails(intval($query['id']), $archiveItem->getTitle(), $archiveItem->getDate());
+            $showList[] = new BaseCardDetails(intval($query['id']));
         }
 
         $this->crawler->clear();
